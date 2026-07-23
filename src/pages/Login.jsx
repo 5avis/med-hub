@@ -37,7 +37,8 @@ export default function Login({ onLoginSuccess, navigateToSignup }) {
       const response = activeTab === 'account'
         ? await api.login(email, password)
         : await api.loginMedHubId(medhubId);
-      localStorage.setItem('medhub_token', response.token);
+      sessionStorage.setItem('medhub_token', response.token);
+      localStorage.removeItem('medhub_token');
       onLoginSuccess(response.token);
     } catch (err) {
       setError(err.message || 'Unable to sign in. Please check your details.');
@@ -48,7 +49,7 @@ export default function Login({ onLoginSuccess, navigateToSignup }) {
 
   const googleClientId = (import.meta.env && import.meta.env.VITE_GOOGLE_CLIENT_ID) || '';
 
-  const handleGoogleCredentialResponse = async (googleResponse) => {
+  const handleGoogleCredentialResponse = React.useCallback(async (googleResponse) => {
     setError('');
     setLoading(true);
     try {
@@ -56,17 +57,30 @@ export default function Login({ onLoginSuccess, navigateToSignup }) {
         credential: googleResponse.credential,
         idToken: googleResponse.credential,
       });
-      localStorage.setItem('medhub_token', response.token);
+      sessionStorage.setItem('medhub_token', response.token);
+      localStorage.removeItem('medhub_token');
       onLoginSuccess(response.token);
     } catch (err) {
       setError(err.message || 'Google Single Sign-On authentication failed.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [onLoginSuccess]);
+
+  const isGisInitializedRef = React.useRef(false);
 
   useEffect(() => {
-    if (window.google?.accounts?.id && googleClientId) {
+    // Google Client ID must end with .apps.googleusercontent.com (NOT start with GOCSPX-)
+    const isValidClientId = googleClientId && googleClientId.includes('.apps.googleusercontent.com');
+
+    if (!isValidClientId) {
+      return;
+    }
+
+    const initializeGis = () => {
+      if (isGisInitializedRef.current) return; // guard: never initialize twice
+      if (!window.google?.accounts?.id) return; // script not ready yet
+
       try {
         window.google.accounts.id.initialize({
           client_id: googleClientId,
@@ -84,16 +98,34 @@ export default function Login({ onLoginSuccess, navigateToSignup }) {
             text: 'continue_with',
           });
         }
+        isGisInitializedRef.current = true;
       } catch (e) {
-        console.warn('Google GIS initialize error:', e.message);
+        console.warn('Google GIS initialize warning:', e.message);
       }
-    }
-  }, [googleClientId]);
+    };
+
+    // Try immediately in case the script already loaded
+    initializeGis();
+
+    // If it wasn't ready yet, poll briefly until the script finishes loading
+    let attempts = 0;
+    const maxAttempts = 20; // ~10 seconds at 500ms
+    const pollId = setInterval(() => {
+      attempts += 1;
+      if (isGisInitializedRef.current || attempts >= maxAttempts) {
+        clearInterval(pollId);
+        return;
+      }
+      initializeGis();
+    }, 500);
+
+    return () => clearInterval(pollId);
+  }, [googleClientId, handleGoogleCredentialResponse]);
 
   const handleGoogleSignIn = async () => {
     setError('');
-    
-    // 1. Standard Google OAuth 2.0 Popup via initTokenClient
+
+    // Standard Google OAuth 2.0 popup via initTokenClient
     if (window.google?.accounts?.oauth2 && googleClientId) {
       try {
         setLoading(true);
@@ -110,7 +142,8 @@ export default function Login({ onLoginSuccess, navigateToSignup }) {
               const response = await api.loginGoogle({
                 accessToken: tokenResponse.access_token,
               });
-              localStorage.setItem('medhub_token', response.token);
+              sessionStorage.setItem('medhub_token', response.token);
+              localStorage.removeItem('medhub_token');
               onLoginSuccess(response.token);
             } catch (err) {
               setError(err.message || 'Google Single Sign-On failed.');
@@ -123,32 +156,14 @@ export default function Login({ onLoginSuccess, navigateToSignup }) {
         return;
       } catch (e) {
         console.warn('initTokenClient error:', e.message);
-      }
-    }
-
-    // 2. Fallback prompt if Google GIS SDK is loading or unavailable
-    setLoading(true);
-    try {
-      const userEmail = prompt(
-        'Google OAuth Client ID setup notice:\nTo use official Google login popup, set VITE_GOOGLE_CLIENT_ID in .env.\n\nEnter your Google email to sign in:',
-        email || 'user@gmail.com'
-      );
-      if (!userEmail) {
+        setError('Google sign-in is not available right now. Please try again in a moment.');
         setLoading(false);
         return;
       }
-      const response = await api.loginGoogle({
-        email: userEmail,
-        name: userEmail.split('@')[0].replace('.', ' '),
-        googleId: `google_${Date.now()}`
-      });
-      localStorage.setItem('medhub_token', response.token);
-      onLoginSuccess(response.token);
-    } catch (err) {
-      setError(err.message || 'Google Single Sign-On failed.');
-    } finally {
-      setLoading(false);
     }
+
+    // Google SDK not ready yet
+    setError('Google sign-in is still loading. Please try again in a few seconds.');
   };
 
   return (
@@ -172,8 +187,8 @@ export default function Login({ onLoginSuccess, navigateToSignup }) {
         <div className="medhub-form-area">
           <div className="access-heading"><span>FULL ACCESS</span><span className="zigzag">⌁</span></div>
 
-          <button 
-            type="button" 
+          <button
+            type="button"
             className="secondary-btn google-auth-btn"
             style={{
               width: '100%',

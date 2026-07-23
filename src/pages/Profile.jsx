@@ -110,21 +110,34 @@ export default function Profile({ onProfileUpdated }) {
     );
   }
 
+  const isReadOnly = profile?.role === 'readonly' || profile?.role === 'read_only';
+
   return (
     <div className="profile-view fade-in">
       <header className="dashboard-header">
         <div>
           <h2>Patient Profile &amp; Medical Record</h2>
-          <p className="subtitle">View and update your personal health biometrics, contact info, and medical history</p>
+          <p className="subtitle">
+            {isReadOnly ? 'Read-only observer view for MedHub ID access' : 'View and update your personal health biometrics, contact info, and medical history'}
+          </p>
         </div>
-        <button
-          type="button"
-          className="primary-btn refresh-btn"
-          onClick={() => setIsEditing(!isEditing)}
-        >
-          {isEditing ? 'Cancel Editing' : '✏️ Edit Health Details'}
-        </button>
+        {!isReadOnly && (
+          <button
+            type="button"
+            className="primary-btn refresh-btn"
+            onClick={() => setIsEditing(!isEditing)}
+          >
+            {isEditing ? 'Cancel Editing' : '✏️ Edit Health Details'}
+          </button>
+        )}
       </header>
+
+      {isReadOnly && (
+        <div style={{ marginBottom: '1.25rem', padding: '0.85rem 1rem', background: '#f1f5f9', border: '1px solid #cbd5e1', color: '#334155', borderRadius: '8px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span>🔒</span>
+          <span>MedHub ID Access: Read-Only Mode. Profile editing is disabled for MedHub ID logins.</span>
+        </div>
+      )}
 
       {error && <div className="alert-error" style={{ marginBottom: '1.25rem' }}>{error}</div>}
       {successMsg && <div className="alert-success" style={{ marginBottom: '1.25rem', padding: '0.85rem 1rem', background: '#dcfce7', color: '#15803d', borderRadius: '8px', fontWeight: '600' }}>{successMsg}</div>}

@@ -45,7 +45,8 @@ export default function Signup({ onSignupSuccess, navigateToLogin }) {
       };
 
       const response = await api.signup(formattedData);
-      localStorage.setItem('medhub_token', response.token);
+      sessionStorage.setItem('medhub_token', response.token);
+      localStorage.removeItem('medhub_token');
       setSuccess('Account created successfully! Redirecting...');
       setTimeout(() => {
         onSignupSuccess(response.token);

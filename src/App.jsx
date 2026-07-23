@@ -30,6 +30,7 @@ export default function App() {
         err.message.includes('401') || 
         err.message.includes('not found')
       ) {
+        sessionStorage.removeItem('medhub_token');
         localStorage.removeItem('medhub_token');
         setUser(null);
         setCurrentPage('login');
@@ -37,9 +38,18 @@ export default function App() {
     }
   };
 
-  // Session authentication checking on app startup
+  // Initialize Theme (Light vs Dark Mode)
   useEffect(() => {
-    const storedToken = localStorage.getItem('medhub_token');
+    const savedTheme = localStorage.getItem('medhub_theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  }, []);
+
+  // Session authentication checking on app startup (Session Storage for tab isolation)
+  useEffect(() => {
+    // Clear legacy localStorage token so tab closing forces re-login
+    localStorage.removeItem('medhub_token');
+
+    const storedToken = sessionStorage.getItem('medhub_token');
     if (storedToken) {
       const decoded = decodeJWT(storedToken);
       if (decoded && !isTokenExpired(decoded)) {
@@ -53,7 +63,7 @@ export default function App() {
         setCurrentPage('dashboard');
         loadUserProfile();
       } else {
-        localStorage.removeItem('medhub_token');
+        sessionStorage.removeItem('medhub_token');
         setUser(null);
         setCurrentPage('login');
       }
@@ -85,6 +95,7 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    sessionStorage.removeItem('medhub_token');
     localStorage.removeItem('medhub_token');
     setUser(null);
     setCurrentPage('login');

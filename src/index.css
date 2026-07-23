@@ -35,6 +35,84 @@
   --card-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.04);
 }
 
+[data-theme="dark"] {
+  --bg-primary: #0b1329;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #0f172a;
+  --border-color: #334155;
+  --border-focus: #14b8a6;
+  
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  
+  --primary-gradient: #14b8a6;
+  --accent-cyan: #14b8a6;
+  --accent-blue: #38bdf8;
+  --accent-green: #34d399;
+  --accent-red: #fb7185;
+  --accent-amber: #fbbf24;
+  
+  --glass-bg: #1e293b;
+  --glass-border: 1px solid #334155;
+  
+  --glow-shadow: 0 4px 20px rgba(20, 184, 166, 0.2);
+  --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] body {
+  background: #0b1329 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .app-header,
+[data-theme="dark"] .sidebar,
+[data-theme="dark"] .medhub-sidebar,
+[data-theme="dark"] .glass-panel,
+[data-theme="dark"] .settings-card,
+[data-theme="dark"] .profile-main-card,
+[data-theme="dark"] .profile-details-section,
+[data-theme="dark"] .profile-biometrics-section,
+[data-theme="dark"] .profile-notes-section,
+[data-theme="dark"] .file-card,
+[data-theme="dark"] .medhub-card,
+[data-theme="dark"] .upload-card,
+[data-theme="dark"] .biometric-card,
+[data-theme="dark"] .modal-container {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .dashboard-header h2,
+[data-theme="dark"] .card-heading h3,
+[data-theme="dark"] .profile-main-card h3,
+[data-theme="dark"] .stat-val,
+[data-theme="dark"] .detail-val,
+[data-theme="dark"] .bio-value .number,
+[data-theme="dark"] .scan-title,
+[data-theme="dark"] h1, [data-theme="dark"] h2, [data-theme="dark"] h3, [data-theme="dark"] h4 {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .subtitle,
+[data-theme="dark"] .card-description,
+[data-theme="dark"] .detail-label,
+[data-theme="dark"] .bio-title,
+[data-theme="dark"] .meta-label,
+[data-theme="dark"] .meta-value {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .form-input,
+[data-theme="dark"] .form-select,
+[data-theme="dark"] .medhub-field input,
+[data-theme="dark"] .search-input {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;

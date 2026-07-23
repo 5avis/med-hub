@@ -62,7 +62,11 @@ export const getProfile = asyncHandler(async (req, res) => {
  * @access  Protected
  */
 export const updateProfile = asyncHandler(async (req, res) => {
-  const { userId } = req.user;
+  const { userId, role } = req.user;
+
+  if (role === 'read_only' || role === 'readonly') {
+    return sendError(res, 'MedHub ID access is read-only. Editing profile details is disabled for MedHub ID logins.', 403);
+  }
   const {
     name,
     age,

@@ -12,11 +12,23 @@ export default function Settings() {
     scanCount: 0
   });
 
-  const [notification, setNotification] = useState('');
+  const [currentTheme, setCurrentTheme] = useState(() => {
+    return localStorage.getItem('medhub_theme') || 'light';
+  });
 
   useEffect(() => {
     updateStats();
-  }, []);
+    // Apply initial theme on mount
+    document.documentElement.setAttribute('data-theme', currentTheme);
+  }, [currentTheme]);
+
+  const handleThemeChange = (themeMode) => {
+    setCurrentTheme(themeMode);
+    localStorage.setItem('medhub_theme', themeMode);
+    document.documentElement.setAttribute('data-theme', themeMode);
+    setNotification(`Theme updated to ${themeMode === 'dark' ? '🌙 Dark Mode (Radiology Dark)' : '☀️ Light Mode (Default Clinical)'}`);
+    setTimeout(() => setNotification(''), 3000);
+  };
 
   const updateStats = () => {
     const users = JSON.parse(localStorage.getItem('sim_users') || '[]');
@@ -65,6 +77,72 @@ export default function Settings() {
 
       <div className="settings-grid">
         
+        {/* Appearance & Theme Selector */}
+        <section className="settings-card glass-panel" style={{ gridColumn: '1 / -1' }}>
+          <div className="card-heading">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1f5c4e" strokeWidth="2">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <h3>Display Theme &amp; Visual Appearance</h3>
+          </div>
+
+          <p className="card-description">
+            Choose between standard clean healthcare light mode and high-contrast dark mode for low-light clinical reading.
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginTop: '1rem' }}>
+            {/* Light Mode Option */}
+            <div
+              style={{
+                border: currentTheme === 'light' ? '2px solid #1f5c4e' : '1px solid #e5e5e5',
+                background: '#ffffff',
+                color: '#0f172a',
+                padding: '1.25rem',
+                borderRadius: '10px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: currentTheme === 'light' ? '0 4px 12px rgba(31, 92, 78, 0.15)' : 'none'
+              }}
+              onClick={() => handleThemeChange('light')}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                <span style={{ fontWeight: '700', fontSize: '1rem' }}>☀️ Light Mode</span>
+                {currentTheme === 'light' && <span style={{ color: '#1f5c4e', fontWeight: '800' }}>✓ Active</span>}
+              </div>
+              <p style={{ fontSize: '0.825rem', color: '#64748b' }}>Standard crisp medical interface with clean white panels and high-visibility typography.</p>
+            </div>
+
+            {/* Dark Mode Option */}
+            <div
+              style={{
+                border: currentTheme === 'dark' ? '2px solid #14b8a6' : '1px solid #334155',
+                background: '#0b1329',
+                color: '#f8fafc',
+                padding: '1.25rem',
+                borderRadius: '10px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: currentTheme === 'dark' ? '0 4px 16px rgba(20, 184, 166, 0.25)' : 'none'
+              }}
+              onClick={() => handleThemeChange('dark')}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                <span style={{ fontWeight: '700', fontSize: '1rem', color: '#f8fafc' }}>🌙 Dark Mode</span>
+                {currentTheme === 'dark' && <span style={{ color: '#14b8a6', fontWeight: '800' }}>✓ Active</span>}
+              </div>
+              <p style={{ fontSize: '0.825rem', color: '#94a3b8' }}>High-contrast dark slate theme optimized for radiology reading rooms and night shifts.</p>
+            </div>
+          </div>
+        </section>
+
         {/* Connection Control */}
         <section className="settings-card glass-panel">
           <div className="card-heading">

@@ -47,7 +47,7 @@ function getHeaders(isMultipart = false) {
     headers['Content-Type'] = 'application/json';
   }
   
-  const token = localStorage.getItem('medhub_token');
+  const token = sessionStorage.getItem('medhub_token') || localStorage.getItem('medhub_token');
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
@@ -70,6 +70,7 @@ async function handleResponse(response) {
 
   if (!response.ok) {
     if (response.status === 401) {
+      sessionStorage.removeItem('medhub_token');
       localStorage.removeItem('medhub_token');
     }
     let errorMessage = body.message || body.error || `HTTP Error ${response.status}: ${response.statusText}`;
@@ -405,10 +406,14 @@ export const api = {
         type: f.fileType || 'Image',
         fileName: f.filename || f.originalName || 'scan.jpg',
         fileUrl: fileUrl,
+        reportPath: f.reportPath ? (f.reportPath.startsWith('http') ? f.reportPath : `${baseUrl}/${f.reportPath}`) : '',
         uploadedBy: analysis.uploadedBy || 'Admitting Clinician',
         uploadedAt: f.createdAt || new Date().toISOString(),
-        patientName: analysis.patientName || 'Patient Record',
-        description: analysis.summary || analysis.aiFindings || 'Clinical scan uploaded and indexed in backend database.'
+        patientName: analysis.patientName || f.user?.name || 'Patient Record',
+        description: analysis.summary || analysis.primaryFinding || analysis.impression || 'Clinical scan uploaded and indexed in backend database.',
+        size: f.size || 524288,
+        mimeType: f.mimeType || 'image/jpeg',
+        analysis: analysis
       };
     });
 
@@ -468,12 +473,17 @@ export const api = {
       ? `${baseUrl}/${uploadedFile.filePath}`
       : (scanData.fileUrl || 'https://images.unsplash.com/photo-1559757175-5700dde675bc?w=800&auto=format&fit=crop&q=60');
 
+    const reportPathUrl = uploadedFile.reportPath
+      ? `${baseUrl}/${uploadedFile.reportPath}`
+      : '';
+
     return {
       id: uploadedFile.id || `scan_${Date.now()}`,
       title: scanData.title || uploadedFile.originalName || 'Medical Scan',
       type: scanData.type || uploadedFile.fileType || 'MRI',
       fileName: uploadedFile.filename || scanData.fileName || 'scan.jpg',
       fileUrl: fileUrl,
+      reportPath: reportPathUrl,
       uploadedBy: creatorName || 'Admitting Clinician',
       uploadedAt: uploadedFile.createdAt || new Date().toISOString(),
       patientName: scanData.patientName || 'Patient Record',
@@ -482,7 +492,7 @@ export const api = {
   },
 
   getProfile: async () => {
-    const token = localStorage.getItem('medhub_token');
+    const token = sessionStorage.getItem('medhub_token') || localStorage.getItem('medhub_token');
     if (isDemoModeEnabled()) {
       return simulator.getProfile(token);
     }
@@ -494,7 +504,7 @@ export const api = {
   },
 
   updateProfile: async (profileData) => {
-    const token = localStorage.getItem('medhub_token');
+    const token = sessionStorage.getItem('medhub_token') || localStorage.getItem('medhub_token');
     if (isDemoModeEnabled()) {
       const users = JSON.parse(localStorage.getItem('sim_users') || '[]');
       if (users[0]) {

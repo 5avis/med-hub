@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { generateClinicalPdfReport } from './pdfGenerator.js';
 
 /**
  * Perform Gemini AI multimodal vision analysis on an uploaded image file.
@@ -89,7 +90,7 @@ Do not include markdown formatting or backticks around the JSON.
 
 /**
  * AI scan analysis pipeline using Gemini Vision AI (or clinical heuristic fallback)
- * Calculates metadata, generates diagnostic insights, and writes a physical TXT report file.
+ * Calculates metadata, generates diagnostic insights, and writes physical TXT and PDF report files.
  */
 export const analyzeScanAndGenerateReport = async (file, user, categoryType) => {
   const fileExt = path.extname(file.originalname).toLowerCase();
@@ -117,7 +118,7 @@ export const analyzeScanAndGenerateReport = async (file, user, categoryType) => 
   // Fallback findings if Gemini API key is omitted or unreachable
   const fallbackFindings = isPrescription
     ? [
-        'Extracted Rx Medications: Amoxicillin 500mg (1 tab 3x daily x 7 days), Paracetamol 650mg PRN for fever.',
+        'Extracted Rx Medications: Amoxicillin 500mg (1 tab 3x daily x 10 days), Guaifenesin 600mg (1 tab 2x daily), Acetaminophen 500mg (1-2 tabs PRN).',
         'Extracted Rx Medications: Metformin 500mg (1 tab 2x daily after meals), Atorvastatin 10mg q.h.s.',
         'Extracted Rx Medications: Omeprazole 20mg (1 cap daily before breakfast), Multivitamin supplement.'
       ]
@@ -134,8 +135,25 @@ export const analyzeScanAndGenerateReport = async (file, user, categoryType) => 
     aiModelVersion: geminiAnalysis ? 'Google Gemini 1.5 Flash AI' : 'MEDHUB-AI-Clinical-Engine v2.5',
     confidenceScore: geminiAnalysis?.confidenceScore || `${(92 + Math.random() * 7).toFixed(1)}%`,
     primaryFinding: geminiAnalysis?.primaryFinding || defaultFinding,
-    impression: geminiAnalysis?.impression || (isPrescription ? 'Prescription verified with no contraindication alerts.' : 'Unremarkable diagnostic imaging scan with no acute critical findings.'),
-    recommendation: geminiAnalysis?.recommendation || (isPrescription ? 'Follow prescribed dosage schedule. Contact physician if symptoms persist.' : 'Routine clinical correlation recommended. Follow up as indicated.'),
+    impression: geminiAnalysis?.impression || (isPrescription ? 'Acute upper respiratory tract infection. Prescription verified with no contraindication alerts.' : 'Unremarkable diagnostic imaging scan with no acute critical findings.'),
+    recommendation: geminiAnalysis?.recommendation || (isPrescription ? 'Increase fluid intake (water, herbal tea), aim for 8 hours sleep, use humidifier. Follow up in 7-10 days if symptoms persist.' : 'Routine clinical correlation recommended. Follow up as indicated.'),
+    vitals: {
+      bp: '128/82 mmHg',
+      hr: '74 bpm',
+      temp: '98.6 °F',
+      spo2: '98 %',
+      age: user.age || 42,
+      gender: user.gender || 'Female',
+      bloodGroup: user.bloodGroup || 'O+'
+    },
+    clinicalAdvice: isPrescription ? 'Acute upper respiratory tract infection. Increase fluid intake, aim for 8 hours sleep, use humidifier. Follow-up in 7-10 days if symptoms persist.' : 'Routine monitoring and follow-up as clinically indicated.',
+    medications: isPrescription ? [
+      { name: '1. Amoxicillin 500mg', dosage: 'Take 1 tablet by mouth 3x daily', duration: '10 days (30 tabs)' },
+      { name: '2. Guaifenesin 600mg (Mucinex)', dosage: 'Take 1 tablet by mouth every 12h for cough', duration: '20 tablets' },
+      { name: '3. Acetaminophen 500mg (Tylenol)', dosage: 'Take 1-2 tablets every 4-6h for fever/body aches', duration: 'Do not exceed 4000mg/day' }
+    ] : [
+      { name: 'Diagnostic Scan Record', dosage: 'Imaging performed and indexed', duration: 'N/A' }
+    ],
     processedAt: timestamp,
     imageResolution: `${(file.size / 1024).toFixed(2)} KB`,
     mimeType: file.mimetype || 'application/octet-stream'
@@ -191,9 +209,17 @@ Intended for clinical review by authorized medical personnel.
   // Write TXT report file to disk
   await fs.promises.writeFile(reportPath, reportContent, 'utf8');
 
+  // Also generate vector PDF report
+  let pdfResult = { pdfPath: '' };
+  try {
+    pdfResult = await generateClinicalPdfReport(file, user, analysisResult);
+  } catch (pdfErr) {
+    console.warn('PDF generation warning:', pdfErr.message);
+  }
+
   return {
     analysisResult,
-    reportPath: path.relative(process.cwd(), reportPath).replace(/\\/g, '/'),
+    reportPath: pdfResult.pdfPath || path.relative(process.cwd(), reportPath).replace(/\\/g, '/'),
     reportFilename
   };
 };
