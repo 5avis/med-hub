@@ -1,3 +1,5 @@
+#MEDHUB
+
 # Medical Imaging & Records Management Application
 
 ## Project Overview
