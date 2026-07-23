@@ -1,10 +1,33 @@
 import { decodeJWT } from './jwt';
 
-// Robust environment variable reading for Vite/CRA compatibility
-const API_BASE_URL = 
+let API_BASE_URL = 
   (import.meta.env && import.meta.env.VITE_API_URL) || 
   (typeof process !== 'undefined' && process.env && process.env.REACT_APP_API_URL) || 
   'http://localhost:5000/api';
+
+async function fetchWithPortFallback(url, options = {}) {
+  if (API_BASE_URL.includes('5001') && url.includes('5000')) {
+    url = url.replace('5000', '5001');
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 1800);
+    const fetchOptions = { ...options, signal: controller.signal };
+
+    const response = await fetch(url, fetchOptions);
+    clearTimeout(timeoutId);
+    return response;
+  } catch (err) {
+    if (url.includes('localhost:5000')) {
+      const fallbackUrl = url.replace('localhost:5000', 'localhost:5001');
+      console.warn(`[PORT FALLBACK] Port 5000 timed out or offline. Switching to port 5001: ${fallbackUrl}`);
+      API_BASE_URL = API_BASE_URL.replace('5000', '5001');
+      return await fetch(fallbackUrl, options);
+    }
+    throw err;
+  }
+}
 
 // Check if we should use local simulation (if API is down or if user toggles Demo Mode)
 const isDemoModeEnabled = () => {
@@ -46,6 +69,9 @@ async function handleResponse(response) {
   }
 
   if (!response.ok) {
+    if (response.status === 401) {
+      localStorage.removeItem('medhub_token');
+    }
     let errorMessage = body.message || body.error || `HTTP Error ${response.status}: ${response.statusText}`;
     if (body.errors && Array.isArray(body.errors)) {
       const details = body.errors.map(err => `${err.field}: ${err.message}`).join(', ');
@@ -307,7 +333,7 @@ export const api = {
     if (isDemoModeEnabled()) {
       return simulator.login(email, password);
     }
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    const response = await fetchWithPortFallback(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({ email, password })
@@ -319,7 +345,7 @@ export const api = {
     if (isDemoModeEnabled()) {
       return simulator.loginMedHubId(medHubId);
     }
-    const response = await fetch(`${API_BASE_URL}/auth/login-medhub`, {
+    const response = await fetchWithPortFallback(`${API_BASE_URL}/auth/login-medhub`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({ medhubId: medHubId, medHubId: medHubId })
@@ -331,7 +357,7 @@ export const api = {
     if (isDemoModeEnabled()) {
       return simulator.signup(userData);
     }
-    const response = await fetch(`${API_BASE_URL}/auth/signup`, {
+    const response = await fetchWithPortFallback(`${API_BASE_URL}/auth/signup`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(userData)
@@ -343,7 +369,7 @@ export const api = {
     if (isDemoModeEnabled()) {
       return simulator.login(googleData.email || 'google.user@medhub.com', 'password123');
     }
-    const response = await fetch(`${API_BASE_URL}/auth/google`, {
+    const response = await fetchWithPortFallback(`${API_BASE_URL}/auth/google`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(googleData)
@@ -358,7 +384,7 @@ export const api = {
     const url = new URL(`${API_BASE_URL}/files`);
     if (filterType && filterType !== 'All') url.searchParams.append('fileType', filterType);
     
-    const response = await fetch(url.toString(), {
+    const response = await fetchWithPortFallback(url.toString(), {
       method: 'GET',
       headers: getHeaders()
     });
@@ -427,7 +453,7 @@ export const api = {
       }
     }
 
-    const response = await fetch(`${API_BASE_URL}/upload/image`, {
+    const response = await fetchWithPortFallback(`${API_BASE_URL}/upload/image`, {
       method: 'POST',
       headers: getHeaders(true),
       body: formData
@@ -460,9 +486,28 @@ export const api = {
     if (isDemoModeEnabled()) {
       return simulator.getProfile(token);
     }
-    const response = await fetch(`${API_BASE_URL}/users/profile`, {
+    const response = await fetchWithPortFallback(`${API_BASE_URL}/users/profile`, {
       method: 'GET',
       headers: getHeaders()
+    });
+    return await handleResponse(response);
+  },
+
+  updateProfile: async (profileData) => {
+    const token = localStorage.getItem('medhub_token');
+    if (isDemoModeEnabled()) {
+      const users = JSON.parse(localStorage.getItem('sim_users') || '[]');
+      if (users[0]) {
+        Object.assign(users[0], profileData);
+        localStorage.setItem('sim_users', JSON.stringify(users));
+        return { user: users[0] };
+      }
+      return { user: profileData };
+    }
+    const response = await fetchWithPortFallback(`${API_BASE_URL}/users/profile`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(profileData)
     });
     return await handleResponse(response);
   }

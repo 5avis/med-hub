@@ -55,3 +55,58 @@ export const getProfile = asyncHandler(async (req, res) => {
     blood_group: user.bloodGroup, // compatibility alias
   });
 });
+
+/**
+ * @desc    Update profile & complete first-time medical onboarding
+ * @route   PUT /api/users/profile
+ * @access  Protected
+ */
+export const updateProfile = asyncHandler(async (req, res) => {
+  const { userId } = req.user;
+  const {
+    name,
+    age,
+    gender,
+    contact,
+    bloodGroup,
+    height,
+    weight,
+    allergies,
+    chronicConditions,
+    emergencyContact,
+    primaryPhysician,
+    medicalHistory,
+  } = req.body;
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!user) {
+    return sendError(res, 'User record not found', 404);
+  }
+
+  const updatedUser = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      ...(name && { name }),
+      ...(age && { age: Number(age) }),
+      ...(gender && { gender }),
+      ...(contact && { contact }),
+      ...(bloodGroup && { bloodGroup }),
+      ...(height && { height: String(height) }),
+      ...(weight && { weight: String(weight) }),
+      ...(allergies !== undefined && { allergies }),
+      ...(chronicConditions !== undefined && { chronicConditions }),
+      ...(emergencyContact !== undefined && { emergencyContact }),
+      ...(primaryPhysician !== undefined && { primaryPhysician }),
+      ...(medicalHistory !== undefined && { medicalHistory }),
+      isFirstLogin: false,
+    },
+  });
+
+  const { password: _, ...userWithoutPassword } = updatedUser;
+  return sendSuccess(res, 'Medical profile updated successfully', {
+    user: userWithoutPassword,
+  });
+});

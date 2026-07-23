@@ -200,15 +200,15 @@ export default function Login({ onLoginSuccess, navigateToSignup }) {
           </div>
 
           {error && <div className="login-error" role="alert">{error}</div>}
-          <form onSubmit={submit}>
+          <form onSubmit={submit} autoComplete="off">
             {activeTab === 'account' ? <>
               <div className="medhub-field"><label htmlFor="login-email">Email or username</label>
-                <input id="login-email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading} /></div>
+                <input id="login-email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading} autoComplete="off" /></div>
               <div className="medhub-field"><label htmlFor="login-password">Password</label>
-                <input id="login-password" type="password" placeholder="••••••••••••" value={password} onChange={(e) => setPassword(e.target.value)} disabled={loading} /></div>
+                <input id="login-password" type="password" placeholder="••••••••••••" value={password} onChange={(e) => setPassword(e.target.value)} disabled={loading} autoComplete="new-password" /></div>
               <a className="forgot-link" href="#forgot-password" onClick={(e) => e.preventDefault()}>Forgot password?</a>
             </> : <div className="medhub-field"><label htmlFor="login-medhubid">Med.hub ID</label>
-              <input id="login-medhubid" type="text" placeholder="MED-xxxx-xxxx" value={medhubId} onChange={(e) => setMedhubId(e.target.value)} disabled={loading} /></div>}
+              <input id="login-medhubid" type="text" placeholder="MED-xxxx-xxxx" value={medhubId} onChange={(e) => setMedhubId(e.target.value)} disabled={loading} autoComplete="off" /></div>}
             <button className="medhub-submit" type="submit" disabled={loading}>{loading ? 'Signing in…' : 'Sign In'}</button>
           </form>
           <p className="access-note"><CheckIcon /><strong>Full access.</strong> Upload images and scans, run analysis, export files, and edit your profile.</p>

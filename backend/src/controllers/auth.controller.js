@@ -237,20 +237,21 @@ export const loginGoogle = asyncHandler(async (req, res) => {
       }
     }
 
-    // Register user in database
+    // Register user in database with empty health biometrics (to be filled during onboarding)
     user = await prisma.user.create({
       data: {
         name: googleName || googleEmail.split('@')[0],
         email: googleEmail,
         password: hashedPassword,
-        age: 30,
-        contact: '+1 (555) 000-0000',
-        bloodGroup: 'O+',
-        height: '170',
-        weight: '70',
+        age: 0,
+        contact: '',
+        bloodGroup: '',
+        height: '',
+        weight: '',
         medicalHistory: 'Registered via Google Single Sign-On',
         medhubId,
         role: 'full_access',
+        isFirstLogin: true,
       },
     });
   }
@@ -266,7 +267,11 @@ export const loginGoogle = asyncHandler(async (req, res) => {
   const { password: _, ...userWithoutPassword } = user;
 
   return sendSuccess(res, 'Authenticated successfully via Google', {
-    user: { ...userWithoutPassword, role: 'full_access' },
+    user: { 
+      ...userWithoutPassword, 
+      role: 'full_access',
+      isFirstLogin: user.isFirstLogin !== false
+    },
     token,
   });
 });

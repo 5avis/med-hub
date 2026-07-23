@@ -12,9 +12,30 @@ import Settings from './pages/Settings';
 
 export default function App() {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
   const [currentPage, setCurrentPage] = useState('loading'); // 'loading', 'login', 'signup', 'dashboard'
   const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'profile', 'settings'
+
+  const loadUserProfile = async () => {
+    try {
+      const profile = await api.getProfile();
+      setUser(prev => ({
+        ...prev,
+        ...profile,
+        bloodGroup: profile.bloodGroup || profile.blood_group || '',
+      }));
+    } catch (err) {
+      console.warn('Profile sync error:', err.message);
+      if (
+        err.message.includes('Invalid or expired') || 
+        err.message.includes('401') || 
+        err.message.includes('not found')
+      ) {
+        localStorage.removeItem('medhub_token');
+        setUser(null);
+        setCurrentPage('login');
+      }
+    }
+  };
 
   // Session authentication checking on app startup
   useEffect(() => {
@@ -22,8 +43,6 @@ export default function App() {
     if (storedToken) {
       const decoded = decodeJWT(storedToken);
       if (decoded && !isTokenExpired(decoded)) {
-        setToken(storedToken);
-        // Map token fields to session user
         setUser({
           id: decoded.sub,
           name: decoded.name || decoded.email,
@@ -32,10 +51,9 @@ export default function App() {
           medhubId: decoded.medhubId || decoded.medHubId || 'MED-100100'
         });
         setCurrentPage('dashboard');
+        loadUserProfile();
       } else {
-        // Expired or corrupted session
         localStorage.removeItem('medhub_token');
-        setToken(null);
         setUser(null);
         setCurrentPage('login');
       }
@@ -44,19 +62,21 @@ export default function App() {
     }
   }, []);
 
-  const handleLoginSuccess = (newToken) => {
+  const handleLoginSuccess = (newToken, fullUserData) => {
     const decoded = decodeJWT(newToken);
     if (decoded) {
-      setToken(newToken);
-      setUser({
+      const sessionUser = {
         id: decoded.sub,
         name: decoded.name || decoded.email,
         email: decoded.email,
         role: decoded.role || 'readonly',
-        medhubId: decoded.medhubId || decoded.medHubId || 'MED-100100'
-      });
+        medhubId: decoded.medhubId || decoded.medHubId || 'MED-100100',
+        ...(fullUserData || {})
+      };
+      setUser(sessionUser);
       setCurrentPage('dashboard');
       setActiveTab('dashboard');
+      loadUserProfile();
     }
   };
 
@@ -66,7 +86,6 @@ export default function App() {
 
   const handleLogout = () => {
     localStorage.removeItem('medhub_token');
-    setToken(null);
     setUser(null);
     setCurrentPage('login');
   };
@@ -74,7 +93,7 @@ export default function App() {
   const renderActiveSubView = () => {
     switch (activeTab) {
       case 'profile':
-        return <Profile />;
+        return <Profile onProfileUpdated={loadUserProfile} />;
       case 'settings':
         return <Settings />;
       case 'dashboard':

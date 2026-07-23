@@ -8,21 +8,27 @@ datasource db {
 }
 
 model User {
-  id             String        @id @default(uuid())
-  name           String
-  email          String        @unique
-  password       String
-  age            Int
-  contact        String
-  bloodGroup     String
-  height         String
-  weight         String
-  medicalHistory String?
-  medhubId       String        @unique
-  role           String        @default("full_access")
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  files          MedicalFile[]
+  id                String        @id @default(uuid())
+  name              String
+  email             String        @unique
+  password          String
+  age               Int
+  contact           String
+  bloodGroup        String
+  height            String
+  weight            String
+  gender            String?
+  allergies         String?
+  chronicConditions String?
+  emergencyContact  String?
+  primaryPhysician  String?
+  medicalHistory    String?
+  medhubId          String        @unique
+  role              String        @default("full_access")
+  isFirstLogin      Boolean       @default(true)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  files             MedicalFile[]
 }
 
 model MedicalFile {
