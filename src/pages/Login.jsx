@@ -1,177 +1,78 @@
 import React, { useState } from 'react';
 import { api } from '../utils/api';
-import { decodeJWT } from '../utils/jwt';
+
+const CheckIcon = () => (
+  <svg className="access-check" viewBox="0 0 20 20" aria-hidden="true">
+    <path d="m5 10.5 3.1 3.1L15.5 6" />
+  </svg>
+);
 
 export default function Login({ onLoginSuccess, navigateToSignup }) {
-  const [activeTab, setActiveTab] = useState('account'); // 'account' or 'medhubid'
+  const [activeTab, setActiveTab] = useState('account');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [medhubId, setMedhubId] = useState('');
-  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
 
-  const handleAccountSubmit = async (e) => {
-    e.preventDefault();
-    if (!email || !password) {
-      setError('Please fill in both Email and Password fields.');
+  const submit = async (event) => {
+    event.preventDefault();
+    const value = activeTab === 'account' ? email : medhubId;
+    if (!value || (activeTab === 'account' && !password)) {
+      setError(activeTab === 'account' ? 'Please enter your email and password.' : 'Please enter your Med.hub ID.');
       return;
     }
-    
     setError('');
     setLoading(true);
     try {
-      const response = await api.login(email, password);
-      // Store token
+      const response = activeTab === 'account'
+        ? await api.login(email, password)
+        : await api.loginMedHubId(medhubId);
       localStorage.setItem('medhub_token', response.token);
-      setSuccess('Login successful! Redirecting...');
-      setTimeout(() => {
-        onLoginSuccess(response.token);
-      }, 800);
+      onLoginSuccess(response.token);
     } catch (err) {
-      setError(err.message || 'Login failed. Please check your credentials.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleMedHubIdSubmit = async (e) => {
-    e.preventDefault();
-    if (!medhubId) {
-      setError('Please enter your Med.hub ID.');
-      return;
-    }
-
-    setError('');
-    setLoading(true);
-    try {
-      const response = await api.loginMedHubId(medhubId);
-      localStorage.setItem('medhub_token', response.token);
-      setSuccess('Access verified! Loading dashboard...');
-      setTimeout(() => {
-        onLoginSuccess(response.token);
-      }, 800);
-    } catch (err) {
-      setError(err.message || 'Verification failed. Please check your ID.');
+      setError(err.message || 'Unable to sign in. Please check your details.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="login-container fade-in">
-      <div className="login-logo-section">
-        <div className="logo-badge">Hub</div>
-        <h1 className="brand-name">Med<span>Hub</span></h1>
-        <p className="brand-tagline">Advanced Clinical Diagnostics & Imaging Portal</p>
-      </div>
+    <div className="medhub-login fade-in">
+      <header className="medhub-branding">
+        <div className="medhub-brand-row">
+          <span className="medhub-mark">MH</span>
+          <h1>MedHub</h1>
+        </div>
+        <p>Sign in to view, upload, or search your records.</p>
+      </header>
 
-      <div className="login-card glass-panel">
-        <div className="login-tabs">
-          <button 
-            type="button"
-            className={`login-tab ${activeTab === 'account' ? 'active' : ''}`}
-            onClick={() => { setActiveTab('account'); setError(''); }}
-          >
-            Account Login
-          </button>
-          <button 
-            type="button"
-            className={`login-tab ${activeTab === 'medhubid' ? 'active' : ''}`}
-            onClick={() => { setActiveTab('medhubid'); setError(''); }}
-          >
-            Med.hub ID Login
-          </button>
+      <section className="medhub-card" aria-label="Sign in">
+        <div className="medhub-tabs" role="tablist">
+          <button type="button" role="tab" aria-selected={activeTab === 'account'} className={activeTab === 'account' ? 'active' : ''}
+            onClick={() => { setActiveTab('account'); setError(''); }}>Account &amp; Password</button>
+          <button type="button" role="tab" aria-selected={activeTab === 'medhubid'} className={activeTab === 'medhubid' ? 'active' : ''}
+            onClick={() => { setActiveTab('medhubid'); setError(''); }}>Med.hub ID</button>
         </div>
 
-        <div className="login-form-wrapper">
-          {error && (
-            <div className="alert-error">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="8" x2="12" y2="12"></line>
-                <line x1="12" y1="16" x2="12.01" y2="16"></line>
-              </svg>
-              <span>{error}</span>
-            </div>
-          )}
-
-          {success && (
-            <div className="alert-success">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                <polyline points="22 4 12 14.01 9 11.01"></polyline>
-              </svg>
-              <span>{success}</span>
-            </div>
-          )}
-
-          {activeTab === 'account' ? (
-            <form onSubmit={handleAccountSubmit}>
-              <div className="form-group">
-                <label className="form-label" htmlFor="login-email">Email Address</label>
-                <input 
-                  id="login-email"
-                  type="email" 
-                  className="form-input" 
-                  placeholder="name@clinical.medhub.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={loading}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label" htmlFor="login-password">Password</label>
-                <input 
-                  id="login-password"
-                  type="password" 
-                  className="form-input" 
-                  placeholder="••••••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={loading}
-                  required
-                />
-              </div>
-
-              <button type="submit" className="primary-btn login-btn" disabled={loading}>
-                {loading ? <div className="spinner" /> : 'Log In to System'}
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={handleMedHubIdSubmit}>
-              <div className="form-group">
-                <label className="form-label" htmlFor="login-medhubid">Med.hub ID</label>
-                <input 
-                  id="login-medhubid"
-                  type="text" 
-                  className="form-input" 
-                  placeholder="MED-xxxx-xxxx"
-                  value={medhubId}
-                  onChange={(e) => setMedhubId(e.target.value)}
-                  disabled={loading}
-                  required
-                />
-                <span className="input-hint">Enter your patient or observer license key to open in read-only mode.</span>
-              </div>
-
-              <button type="submit" className="primary-btn login-btn" disabled={loading}>
-                {loading ? <div className="spinner" /> : 'Access Diagnostics View'}
-              </button>
-            </form>
-          )}
+        <div className="medhub-form-area">
+          <div className="access-heading"><span>FULL ACCESS</span><span className="zigzag">⌁</span></div>
+          {error && <div className="login-error" role="alert">{error}</div>}
+          <form onSubmit={submit}>
+            {activeTab === 'account' ? <>
+              <div className="medhub-field"><label htmlFor="login-email">Email or username</label>
+                <input id="login-email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading} /></div>
+              <div className="medhub-field"><label htmlFor="login-password">Password</label>
+                <input id="login-password" type="password" placeholder="••••••••••••" value={password} onChange={(e) => setPassword(e.target.value)} disabled={loading} /></div>
+              <a className="forgot-link" href="#forgot-password" onClick={(e) => e.preventDefault()}>Forgot password?</a>
+            </> : <div className="medhub-field"><label htmlFor="login-medhubid">Med.hub ID</label>
+              <input id="login-medhubid" type="text" placeholder="MED-xxxx-xxxx" value={medhubId} onChange={(e) => setMedhubId(e.target.value)} disabled={loading} /></div>}
+            <button className="medhub-submit" type="submit" disabled={loading}>{loading ? 'Signing in…' : 'Sign In'}</button>
+          </form>
+          <p className="access-note"><CheckIcon /><strong>Full access.</strong> Upload images and scans, run analysis, export files, and edit your profile.</p>
         </div>
-
-        <div className="login-footer">
-          <p>Don't have an administrative account?</p>
-          <button type="button" className="text-link-btn" onClick={navigateToSignup}>
-            Create an Account &rarr;
-          </button>
-        </div>
-      </div>
+      </section>
+      <footer className="medhub-footer">New here? <button type="button" onClick={navigateToSignup}>Create an account</button></footer>
     </div>
   );
 }
