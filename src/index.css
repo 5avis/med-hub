@@ -1,38 +1,38 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
 
 :root {
-  /* Colors */
-  --bg-primary: #080c16;
-  --bg-secondary: #0f1424;
-  --bg-tertiary: #182037;
-  --border-color: rgba(255, 255, 255, 0.08);
-  --border-focus: #00f2fe;
+  /* MedHub Healthcare SaaS Design Tokens */
+  --bg-primary: #fafafa;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f3f4f6;
+  --border-color: #e5e5e5;
+  --border-focus: #1f5c4e;
   
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
   --text-muted: #64748b;
   
-  --primary-gradient: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
-  --accent-cyan: #00f2fe;
-  --accent-blue: #3b82f6;
-  --accent-green: #10b981;
-  --accent-red: #f43f5e;
-  --accent-amber: #f59e0b;
+  --primary-gradient: #1f5c4e;
+  --accent-cyan: #1f5c4e;
+  --accent-blue: #0284c7;
+  --accent-green: #059669;
+  --accent-red: #e11d48;
+  --accent-amber: #d97706;
   
-  --glass-bg: rgba(15, 20, 36, 0.65);
-  --glass-border: 1px solid rgba(255, 255, 255, 0.07);
+  --glass-bg: #ffffff;
+  --glass-border: 1px solid #e5e5e5;
   
   /* Fonts */
-  --font-display: 'Outfit', 'Inter', -apple-system, sans-serif;
-  --font-body: 'Inter', -apple-system, sans-serif;
+  --font-display: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+  --font-body: 'Inter', -apple-system, 'Segoe UI', sans-serif;
   
   /* Transitions */
-  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s ease;
   
   /* Shadow */
-  --glow-shadow: 0 0 25px rgba(0, 242, 254, 0.2);
-  --card-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.6);
+  --glow-shadow: 0 4px 20px rgba(31, 92, 78, 0.08);
+  --card-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.04);
 }
 
 * {
@@ -43,7 +43,7 @@
 
 body {
   font-family: var(--font-body);
-  background-color: var(--bg-primary);
+  background: #fafafa;
   color: var(--text-primary);
   min-height: 100vh;
   overflow-x: hidden;
@@ -1854,4 +1854,486 @@ h1, h2, h3, h4, h5, h6 {
 .reset-db-btn:hover {
   background: rgba(244, 63, 94, 0.2);
   border-color: var(--accent-red);
+}
+
+/* ==========================================================================
+   LIGHT CRISP WHITE & FOREST-GREEN THEME OVERHAUL
+   ========================================================================== */
+.glass-panel {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05) !important;
+  border-radius: 16px !important;
+}
+
+.sidebar {
+  background: #ffffff !important;
+  border-right: 1px solid #e2e8f0 !important;
+}
+
+.image-dropzone-box {
+  background: #f8fafc !important;
+  border: 2px dashed rgba(15, 118, 110, 0.3) !important;
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  transition: var(--transition-normal);
+  cursor: pointer;
+  position: relative;
+}
+
+.image-dropzone-box:hover,
+.image-dropzone-box.has-file {
+  background: rgba(15, 118, 110, 0.04) !important;
+  border-color: #0f766e !important;
+}
+
+.image-dropzone-label {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.dropzone-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dropzone-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0f172a !important;
+}
+
+.dropzone-sub {
+  font-size: 0.8rem;
+  color: #64748b !important;
+}
+
+.dropzone-btn-badge {
+  display: inline-block;
+  margin-top: 0.5rem;
+  background: rgba(15, 118, 110, 0.1);
+  border: 1px solid rgba(15, 118, 110, 0.3);
+  color: #0f766e;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: var(--transition-fast);
+}
+
+.image-dropzone-box:hover .dropzone-btn-badge {
+  background: #134e4a;
+  color: #ffffff;
+}
+
+.dropzone-preview-container {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  width: 100%;
+}
+
+.dropzone-thumbnail {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid #0f766e;
+  box-shadow: 0 4px 12px rgba(15, 118, 110, 0.15);
+}
+
+.dropzone-file-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  text-align: left;
+}
+
+.dropzone-file-meta .file-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.dropzone-file-meta .change-hint {
+  font-size: 0.775rem;
+  color: #0f766e;
+}
+
+.spinner-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.uppercase-label {
+  font-size: 0.725rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  color: #475569 !important;
+  text-transform: uppercase !important;
+  margin-bottom: 0.45rem !important;
+}
+
+.dark-styled-input {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  border-radius: 8px !important;
+  padding: 0.75rem 1rem !important;
+  font-size: 0.9rem !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.dark-styled-input:focus {
+  border-color: #0f766e !important;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.15) !important;
+  outline: none !important;
+}
+
+.profile-badges-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
+}
+
+.medhub-id-badge {
+  display: inline-block;
+  background: rgba(15, 118, 110, 0.1);
+  border: 1px solid rgba(15, 118, 110, 0.3);
+  color: #0f766e;
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: monospace;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+
+.primary-btn {
+  background: #1f5c4e !important;
+  color: #ffffff !important;
+  border-radius: 8px !important;
+  font-weight: 700 !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.primary-btn:hover {
+  background: #17473c !important;
+  box-shadow: 0 4px 12px rgba(31, 92, 78, 0.2) !important;
+}
+
+.file-card {
+  background: #ffffff !important;
+  border: 1px solid #e5e5e5 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03) !important;
+  border-radius: 10px !important;
+}
+
+.file-card:hover {
+  border-color: #1f5c4e !important;
+  box-shadow: 0 8px 20px rgba(31, 92, 78, 0.1) !important;
+}
+
+/* ==========================================================================
+   MEDHUB HEALTHCARE SAAS DESIGN SYSTEM OVERHAUL
+   ========================================================================== */
+.glass-panel,
+.upload-section,
+.search-list-section,
+.profile-main-card,
+.profile-details-section,
+.profile-biometrics-section,
+.profile-notes-section,
+.settings-section,
+.counter-box,
+.biometric-card {
+  background: #ffffff !important;
+  border: 1px solid #e5e5e5 !important;
+  box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.03) !important;
+  border-radius: 12px !important;
+  color: #0f172a !important;
+}
+
+.sidebar {
+  background: #ffffff !important;
+  border-right: 1px solid #e5e5e5 !important;
+}
+
+.sidebar-profile {
+  background: #fafafa !important;
+  border: 1px solid #e5e5e5 !important;
+  border-radius: 10px !important;
+}
+
+/* Dual Mode Switcher Tabs for Prescriptions vs Radiology Scans */
+.uploader-mode-selector {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  background: #f3f4f6;
+  padding: 0.35rem;
+  border-radius: 10px;
+  border: 1px solid #e5e5e5;
+}
+
+.uploader-mode-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.85rem;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: #475569;
+  font-size: 0.825rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.uploader-mode-btn:hover {
+  color: #0f172a;
+}
+
+.uploader-mode-btn.active {
+  background: #1f5c4e !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(31, 92, 78, 0.15);
+}
+
+.badge-prescription {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+/* Stacked Up and Down Visible Upload Boxes */
+.dual-upload-boxes-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+
+.hidden-file-input {
+  display: none !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  position: absolute !important;
+  pointer-events: none !important;
+}
+
+.simple-upload-card {
+  background: #ffffff;
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 1.75rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.simple-upload-card:hover {
+  border-color: #1f5c4e;
+  background: #f8fafc;
+}
+
+.prescription-card:hover {
+  border-color: #0284c7;
+}
+
+.box-icon-header {
+  margin-bottom: 0.75rem;
+}
+
+.simple-upload-card h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 0.35rem;
+  letter-spacing: 0.02em;
+}
+
+.simple-upload-card p {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-bottom: 1.25rem;
+  line-height: 1.4;
+}
+
+.box-action-btn {
+  display: inline-block;
+  padding: 0.65rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.prescription-btn {
+  background: #0284c7;
+  color: #ffffff;
+}
+
+.prescription-btn:hover {
+  background: #0369a1;
+}
+
+.scan-btn {
+  background: #1f5c4e;
+  color: #ffffff;
+}
+
+.scan-btn:hover {
+  background: #17473c;
+}
+
+.alert-loading-banner {
+  background: rgba(31, 92, 78, 0.08);
+  border: 1px solid rgba(31, 92, 78, 0.2);
+  color: #1f5c4e;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.sidebar-brand .brand-icon {
+  background: #1f5c4e !important;
+  color: #ffffff !important;
+}
+
+.sidebar-brand .brand-text {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+.sidebar-brand .brand-text span {
+  color: #1f5c4e !important;
+}
+
+.profile-name,
+.scan-title,
+.card-content h4,
+.section-title,
+.modal-header h2,
+.control-title,
+.bio-title,
+.bio-value .number {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+.search-bar-container {
+  background: #ffffff !important;
+  border: 1px solid #e5e5e5 !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+}
+
+.search-input {
+  background: transparent !important;
+  color: #0f172a !important;
+}
+
+.search-input::placeholder {
+  color: #64748b !important;
+}
+
+.form-input,
+.form-select,
+.form-textarea,
+.dark-styled-input {
+  background: #ffffff !important;
+  border: 1px solid #e5e5e5 !important;
+  color: #0f172a !important;
+  border-radius: 8px !important;
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus,
+.dark-styled-input:focus {
+  border-color: #1f5c4e !important;
+  box-shadow: 0 0 0 3px rgba(31, 92, 78, 0.12) !important;
+}
+
+.menu-item {
+  color: #475569 !important;
+  border-radius: 8px !important;
+}
+
+.menu-item:hover {
+  background: #f3f4f6 !important;
+  color: #0f172a !important;
+}
+
+.menu-item.active {
+  background: #1f5c4e !important;
+  color: #ffffff !important;
+  border-left: none !important;
+  padding-left: 1rem !important;
+  font-weight: 700 !important;
+  border-radius: 20px !important;
+}
+
+.filter-tabs button {
+  background: #f3f4f6 !important;
+  border: 1px solid #e5e5e5 !important;
+  color: #475569 !important;
+  border-radius: 20px !important;
+}
+
+.filter-tabs button.active {
+  background: #1f5c4e !important;
+  color: #ffffff !important;
+  border-color: #1f5c4e !important;
+  font-weight: 700 !important;
+}
+
+.card-actions {
+  background: #fafafa !important;
+  border-top: 1px solid #e5e5e5 !important;
+}
+
+.modal-container {
+  background: #ffffff !important;
+  border: 1px solid #e5e5e5 !important;
+  border-radius: 12px !important;
+}
+
+.diagnostic-info-panel {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+.clinical-description,
+.notes-container {
+  background: #fafafa !important;
+  border: 1px solid #e5e5e5 !important;
+  color: #334155 !important;
+  border-radius: 8px !important;
 }

@@ -32,20 +32,33 @@ function getHeaders(isMultipart = false) {
 }
 
 /**
- * Handle API responses and throw informative errors.
+ * Handle API responses and throw informative errors. Unwraps data payload if wrapped in standardized envelope.
  */
 async function handleResponse(response) {
+  let body;
+  try {
+    body = await response.json();
+  } catch (e) {
+    if (!response.ok) {
+      throw new Error(`HTTP Error ${response.status}: ${response.statusText}`);
+    }
+    return {};
+  }
+
   if (!response.ok) {
-    let errorMessage = `HTTP Error ${response.status}: ${response.statusText}`;
-    try {
-      const errorData = await response.json();
-      errorMessage = errorData.message || errorData.error || errorMessage;
-    } catch (e) {
-      // JSON parsing failed, use fallback message
+    let errorMessage = body.message || body.error || `HTTP Error ${response.status}: ${response.statusText}`;
+    if (body.errors && Array.isArray(body.errors)) {
+      const details = body.errors.map(err => `${err.field}: ${err.message}`).join(', ');
+      errorMessage = `${errorMessage} (${details})`;
     }
     throw new Error(errorMessage);
   }
-  return response.json();
+
+  // Handle standard response envelope { success: true, message: '...', data: { ... } }
+  if (body && typeof body === 'object' && 'data' in body && body.data !== null) {
+    return body.data;
+  }
+  return body;
 }
 
 /**
@@ -163,17 +176,15 @@ const simulator = {
 
   loginMedHubId: async (medHubId) => {
     await new Promise(r => setTimeout(r, 600));
-    // Accept medhub ID. If it is formatted like 'MED-XXXX', retrieve or make up details.
     if (!medHubId || medHubId.trim().length < 4) {
       throw new Error('Invalid Med.hub ID. Must be at least 4 characters.');
     }
     
-    // We parse or locate a simulation user, or use a general read-only identity.
     const token = createSimulatedToken({
       sub: medHubId,
       name: `Viewer (${medHubId})`,
       email: `${medHubId.toLowerCase()}@medhub.id`,
-      role: 'readonly', // Med.hub ID logins are Read-Only
+      role: 'readonly',
       medHubId: medHubId
     });
 
@@ -271,7 +282,6 @@ const simulator = {
     const users = JSON.parse(localStorage.getItem('sim_users') || '[]');
     const user = users.find(u => u.id === decoded.sub || u.email === decoded.email);
     if (!user) {
-      // Fallback if not found in db
       return {
         id: decoded.sub,
         name: decoded.name,
@@ -290,116 +300,159 @@ const simulator = {
 };
 
 /**
- * Exported API clients. Automatically checks connection and falls back to simulation mode.
+ * Exported API clients. Real backend integration with simulator fallback when explicitly enabled.
  */
 export const api = {
   login: async (email, password) => {
     if (isDemoModeEnabled()) {
       return simulator.login(email, password);
     }
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({ email, password })
-      });
-      return await handleResponse(response);
-    } catch (err) {
-      if (err.message.includes('Failed to fetch') || err.message.includes('connection')) {
-        console.warn('Backend server unreachable. Falling back to Simulated Demo mode.');
-        setDemoMode(true);
-        return simulator.login(email, password);
-      }
-      throw err;
-    }
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ email, password })
+    });
+    return await handleResponse(response);
   },
 
   loginMedHubId: async (medHubId) => {
     if (isDemoModeEnabled()) {
       return simulator.loginMedHubId(medHubId);
     }
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/medhub-login`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({ medHubId })
-      });
-      return await handleResponse(response);
-    } catch (err) {
-      if (err.message.includes('Failed to fetch') || err.message.includes('connection')) {
-        console.warn('Backend server unreachable. Falling back to Simulated Demo mode.');
-        setDemoMode(true);
-        return simulator.loginMedHubId(medHubId);
-      }
-      throw err;
-    }
+    const response = await fetch(`${API_BASE_URL}/auth/login-medhub`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ medhubId: medHubId, medHubId: medHubId })
+    });
+    return await handleResponse(response);
   },
 
   signup: async (userData) => {
     if (isDemoModeEnabled()) {
       return simulator.signup(userData);
     }
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/signup`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(userData)
-      });
-      return await handleResponse(response);
-    } catch (err) {
-      if (err.message.includes('Failed to fetch') || err.message.includes('connection')) {
-        console.warn('Backend server unreachable. Falling back to Simulated Demo mode.');
-        setDemoMode(true);
-        return simulator.signup(userData);
-      }
-      throw err;
+    const response = await fetch(`${API_BASE_URL}/auth/signup`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(userData)
+    });
+    return await handleResponse(response);
+  },
+
+  loginGoogle: async (googleData) => {
+    if (isDemoModeEnabled()) {
+      return simulator.login(googleData.email || 'google.user@medhub.com', 'password123');
     }
+    const response = await fetch(`${API_BASE_URL}/auth/google`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(googleData)
+    });
+    return await handleResponse(response);
   },
 
   getScans: async (query = '', filterType = '') => {
     if (isDemoModeEnabled()) {
       return simulator.getScans(query, filterType);
     }
-    try {
-      const url = new URL(`${API_BASE_URL}/scans`);
-      if (query) url.searchParams.append('query', query);
-      if (filterType && filterType !== 'All') url.searchParams.append('type', filterType);
-      
-      const response = await fetch(url.toString(), {
-        method: 'GET',
-        headers: getHeaders()
-      });
-      return await handleResponse(response);
-    } catch (err) {
-      if (err.message.includes('Failed to fetch') || err.message.includes('connection')) {
-        setDemoMode(true);
-        return simulator.getScans(query, filterType);
-      }
-      throw err;
+    const url = new URL(`${API_BASE_URL}/files`);
+    if (filterType && filterType !== 'All') url.searchParams.append('fileType', filterType);
+    
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    const result = await handleResponse(response);
+    const rawFiles = result.files || (Array.isArray(result) ? result : []);
+
+    const baseUrl = API_BASE_URL.replace(/\/api\/?$/, '');
+    
+    const scans = rawFiles.map(f => {
+      const analysis = f.analysisResult || {};
+      const fileUrl = f.filePath 
+        ? (f.filePath.startsWith('http') ? f.filePath : `${baseUrl}/${f.filePath}`) 
+        : 'https://images.unsplash.com/photo-1559757175-5700dde675bc?w=800&auto=format&fit=crop&q=60';
+
+      return {
+        id: f.id,
+        title: f.originalName ? f.originalName.replace(/\.[^/.]+$/, "") : 'Medical Scan',
+        type: f.fileType || 'Image',
+        fileName: f.filename || f.originalName || 'scan.jpg',
+        fileUrl: fileUrl,
+        uploadedBy: analysis.uploadedBy || 'Admitting Clinician',
+        uploadedAt: f.createdAt || new Date().toISOString(),
+        patientName: analysis.patientName || 'Patient Record',
+        description: analysis.summary || analysis.aiFindings || 'Clinical scan uploaded and indexed in backend database.'
+      };
+    });
+
+    if (query) {
+      const q = query.toLowerCase();
+      return scans.filter(s =>
+        s.title.toLowerCase().includes(q) ||
+        s.patientName.toLowerCase().includes(q) ||
+        s.description.toLowerCase().includes(q)
+      );
     }
+    return scans;
   },
 
   uploadScan: async (scanData, creatorName) => {
     if (isDemoModeEnabled()) {
       return simulator.uploadScan(scanData, creatorName);
     }
-    try {
-      // Check if it is a JSON or file payload.
-      // For real app support, we can handle a multipart/form-data upload.
-      const isMultipart = scanData instanceof FormData;
-      const response = await fetch(`${API_BASE_URL}/scans`, {
-        method: 'POST',
-        headers: getHeaders(isMultipart),
-        body: isMultipart ? scanData : JSON.stringify(scanData)
-      });
-      return await handleResponse(response);
-    } catch (err) {
-      if (err.message.includes('Failed to fetch') || err.message.includes('connection')) {
-        setDemoMode(true);
-        return simulator.uploadScan(scanData, creatorName);
+
+    let formData;
+    if (scanData instanceof FormData) {
+      formData = scanData;
+    } else {
+      formData = new FormData();
+      if (scanData.fileUrl && scanData.fileUrl.startsWith('data:')) {
+        const arr = scanData.fileUrl.split(',');
+        const mimeMatch = arr[0].match(/:(.*?);/);
+        const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+          u8arr[n] = bstr.charCodeAt(n);
+        }
+        const file = new File([u8arr], scanData.fileName || 'medical_scan.jpg', { type: mime });
+        formData.append('image', file);
+      } else if (scanData.file) {
+        formData.append('image', scanData.file);
+      } else {
+        const dummyBlob = new Blob(["dummy medical scan content"], { type: 'image/jpeg' });
+        formData.append('image', dummyBlob, scanData.fileName || 'scan.jpg');
       }
-      throw err;
     }
+
+    const response = await fetch(`${API_BASE_URL}/upload/image`, {
+      method: 'POST',
+      headers: getHeaders(true),
+      body: formData
+    });
+
+    const result = await handleResponse(response);
+    const uploadedFile = result.file || {};
+    const analysis = result.analysisResult || {};
+    const baseUrl = API_BASE_URL.replace(/\/api\/?$/, '');
+
+    const fileUrl = uploadedFile.filePath 
+      ? `${baseUrl}/${uploadedFile.filePath}`
+      : (scanData.fileUrl || 'https://images.unsplash.com/photo-1559757175-5700dde675bc?w=800&auto=format&fit=crop&q=60');
+
+    return {
+      id: uploadedFile.id || `scan_${Date.now()}`,
+      title: scanData.title || uploadedFile.originalName || 'Medical Scan',
+      type: scanData.type || uploadedFile.fileType || 'MRI',
+      fileName: uploadedFile.filename || scanData.fileName || 'scan.jpg',
+      fileUrl: fileUrl,
+      uploadedBy: creatorName || 'Admitting Clinician',
+      uploadedAt: uploadedFile.createdAt || new Date().toISOString(),
+      patientName: scanData.patientName || 'Patient Record',
+      description: scanData.description || analysis.summary || 'Scan uploaded and analyzed successfully.'
+    };
   },
 
   getProfile: async () => {
@@ -407,18 +460,10 @@ export const api = {
     if (isDemoModeEnabled()) {
       return simulator.getProfile(token);
     }
-    try {
-      const response = await fetch(`${API_BASE_URL}/users/profile`, {
-        method: 'GET',
-        headers: getHeaders()
-      });
-      return await handleResponse(response);
-    } catch (err) {
-      if (err.message.includes('Failed to fetch') || err.message.includes('connection')) {
-        setDemoMode(true);
-        return simulator.getProfile(token);
-      }
-      throw err;
-    }
+    const response = await fetch(`${API_BASE_URL}/users/profile`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return await handleResponse(response);
   }
 };

@@ -1,0 +1,45 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String        @id @default(uuid())
+  name           String
+  email          String        @unique
+  password       String
+  age            Int
+  contact        String
+  bloodGroup     String
+  height         String
+  weight         String
+  medicalHistory String?
+  medhubId       String        @unique
+  role           String        @default("full_access")
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  files          MedicalFile[]
+}
+
+model MedicalFile {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  originalName   String
+  filename       String
+  mimeType       String
+  size           Int
+  fileType       String
+  filePath       String
+  reportPath     String
+  analysisResult String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId])
+  @@index([fileType])
+}

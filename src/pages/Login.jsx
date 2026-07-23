@@ -1,9 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { api } from '../utils/api';
 
 const CheckIcon = () => (
   <svg className="access-check" viewBox="0 0 20 20" aria-hidden="true">
     <path d="m5 10.5 3.1 3.1L15.5 6" />
+  </svg>
+);
+
+const GoogleIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" style={{ marginRight: '8px' }}>
+    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
   </svg>
 );
 
@@ -37,6 +46,111 @@ export default function Login({ onLoginSuccess, navigateToSignup }) {
     }
   };
 
+  const googleClientId = (import.meta.env && import.meta.env.VITE_GOOGLE_CLIENT_ID) || '';
+
+  const handleGoogleCredentialResponse = async (googleResponse) => {
+    setError('');
+    setLoading(true);
+    try {
+      const response = await api.loginGoogle({
+        credential: googleResponse.credential,
+        idToken: googleResponse.credential,
+      });
+      localStorage.setItem('medhub_token', response.token);
+      onLoginSuccess(response.token);
+    } catch (err) {
+      setError(err.message || 'Google Single Sign-On authentication failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (window.google?.accounts?.id && googleClientId) {
+      try {
+        window.google.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: handleGoogleCredentialResponse,
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
+
+        const btnParent = document.getElementById('google-official-btn');
+        if (btnParent) {
+          window.google.accounts.id.renderButton(btnParent, {
+            theme: 'outline',
+            size: 'large',
+            width: '320',
+            text: 'continue_with',
+          });
+        }
+      } catch (e) {
+        console.warn('Google GIS initialize error:', e.message);
+      }
+    }
+  }, [googleClientId]);
+
+  const handleGoogleSignIn = async () => {
+    setError('');
+    
+    // 1. Standard Google OAuth 2.0 Popup via initTokenClient
+    if (window.google?.accounts?.oauth2 && googleClientId) {
+      try {
+        setLoading(true);
+        const tokenClient = window.google.accounts.oauth2.initTokenClient({
+          client_id: googleClientId,
+          scope: 'email profile openid',
+          callback: async (tokenResponse) => {
+            if (tokenResponse.error) {
+              setError('Google OAuth sign-in was canceled or denied.');
+              setLoading(false);
+              return;
+            }
+            try {
+              const response = await api.loginGoogle({
+                accessToken: tokenResponse.access_token,
+              });
+              localStorage.setItem('medhub_token', response.token);
+              onLoginSuccess(response.token);
+            } catch (err) {
+              setError(err.message || 'Google Single Sign-On failed.');
+            } finally {
+              setLoading(false);
+            }
+          },
+        });
+        tokenClient.requestAccessToken({ prompt: 'select_account' });
+        return;
+      } catch (e) {
+        console.warn('initTokenClient error:', e.message);
+      }
+    }
+
+    // 2. Fallback prompt if Google GIS SDK is loading or unavailable
+    setLoading(true);
+    try {
+      const userEmail = prompt(
+        'Google OAuth Client ID setup notice:\nTo use official Google login popup, set VITE_GOOGLE_CLIENT_ID in .env.\n\nEnter your Google email to sign in:',
+        email || 'user@gmail.com'
+      );
+      if (!userEmail) {
+        setLoading(false);
+        return;
+      }
+      const response = await api.loginGoogle({
+        email: userEmail,
+        name: userEmail.split('@')[0].replace('.', ' '),
+        googleId: `google_${Date.now()}`
+      });
+      localStorage.setItem('medhub_token', response.token);
+      onLoginSuccess(response.token);
+    } catch (err) {
+      setError(err.message || 'Google Single Sign-On failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="medhub-login fade-in">
       <header className="medhub-branding">
@@ -57,6 +171,34 @@ export default function Login({ onLoginSuccess, navigateToSignup }) {
 
         <div className="medhub-form-area">
           <div className="access-heading"><span>FULL ACCESS</span><span className="zigzag">⌁</span></div>
+
+          <button 
+            type="button" 
+            className="secondary-btn google-auth-btn"
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '10px 16px',
+              marginBottom: '16px',
+              backgroundColor: '#ffffff',
+              color: '#3c4043',
+              border: '1px solid #dadce0',
+              borderRadius: '8px',
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}
+            onClick={handleGoogleSignIn}
+            disabled={loading}
+          >
+            <GoogleIcon /> Continue with Google
+          </button>
+
+          <div style={{ textAlign: 'center', margin: '8px 0 16px 0', color: '#888', fontSize: '12px' }}>
+            ────── OR ──────
+          </div>
+
           {error && <div className="login-error" role="alert">{error}</div>}
           <form onSubmit={submit}>
             {activeTab === 'account' ? <>

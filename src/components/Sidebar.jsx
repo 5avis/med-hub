@@ -34,9 +34,14 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
           <h4 className="profile-name" title={user?.name || 'User'}>
             {user?.name || 'Clinician'}
           </h4>
-          <span className={`role-badge ${isReadOnly ? 'badge-readonly' : 'badge-full'}`}>
-            {isReadOnly ? 'Read-Only' : 'Full Access'}
-          </span>
+          <div className="profile-badges-row">
+            <span className={`role-badge ${isReadOnly ? 'badge-readonly' : 'badge-full'}`}>
+              {isReadOnly ? 'Read-Only' : 'Full Access'}
+            </span>
+            <span className="medhub-id-badge">
+              {user?.medhubId || 'MED-100100'}
+            </span>
+          </div>
         </div>
       </div>
 

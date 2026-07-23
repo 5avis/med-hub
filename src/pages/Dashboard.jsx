@@ -7,24 +7,14 @@ export default function Dashboard({ user }) {
   const [scans, setScans] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  
   // Search and Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [scanTypeFilter, setScanTypeFilter] = useState('All');
   
-  // Upload form state
+  // Upload state
   const [uploadLoading, setUploadLoading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [uploadSuccess, setUploadSuccess] = useState('');
-  const [newScan, setNewScan] = useState({
-    title: '',
-    type: 'MRI',
-    patientName: '',
-    description: '',
-    fileUrl: '',
-    fileName: ''
-  });
 
   // Selected scan for modal view
   const [selectedScan, setSelectedScan] = useState(null);
@@ -39,69 +29,12 @@ export default function Dashboard({ user }) {
     setLoading(true);
     setError('');
     try {
-      // In a real app we might pass queries, here we load and we filter in memory for snappy response
       const data = await api.getScans();
       setScans(data);
     } catch (err) {
       setError(err.message || 'Failed to retrieve diagnostic records.');
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Convert uploaded file to base64
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setNewScan(prev => ({
-        ...prev,
-        fileName: file.name,
-        fileUrl: reader.result // Base64 data URL
-      }));
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleUploadSubmit = async (e) => {
-    e.preventDefault();
-    setUploadError('');
-    setUploadSuccess('');
-
-    if (!newScan.title || !newScan.patientName || !newScan.fileUrl) {
-      setUploadError('Please provide a title, patient name, and select a scan image.');
-      return;
-    }
-
-    setUploadLoading(true);
-    try {
-      const uploadedData = await api.uploadScan(newScan, user.name);
-      setScans(prev => [uploadedData, ...prev]);
-      
-      setUploadSuccess('Medical scan successfully registered and indexed.');
-      
-      // Reset form
-      setNewScan({
-        title: '',
-        type: 'MRI',
-        patientName: '',
-        description: '',
-        fileUrl: '',
-        fileName: ''
-      });
-      // Clear file input
-      const fileInput = document.getElementById('scan-file-input');
-      if (fileInput) fileInput.value = '';
-
-      setTimeout(() => {
-        setUploadSuccess('');
-      }, 3000);
-    } catch (err) {
-      setUploadError(err.message || 'Upload failed. Please check files and try again.');
-    } finally {
-      setUploadLoading(false);
     }
   };
 
@@ -147,6 +80,42 @@ export default function Dashboard({ user }) {
     }));
   };
 
+  // Direct file uploader handler for two boxes
+  const handleDirectUpload = async (file, uploadType) => {
+    if (!file) return;
+    setUploadError('');
+    setUploadSuccess('');
+    setUploadLoading(true);
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const fileUrl = reader.result;
+      const autoTitle = `${uploadType === 'Prescription' ? 'Prescription Rx' : 'Radiology Scan'} - ${file.name}`;
+      
+      const payload = {
+        title: autoTitle,
+        type: uploadType === 'Prescription' ? 'Prescription' : 'MRI',
+        patientName: user.name || 'Patient',
+        description: `Direct upload under ${uploadType}`,
+        fileName: file.name,
+        fileUrl: fileUrl,
+        fileObj: file
+      };
+
+      try {
+        const uploadedData = await api.uploadScan(payload, user.name);
+        setScans(prev => [uploadedData, ...prev]);
+        setUploadSuccess(`${uploadType === 'Prescription' ? 'Prescription' : 'Radiology Scan'} uploaded successfully! Gemini AI report generated.`);
+        setTimeout(() => setUploadSuccess(''), 4000);
+      } catch (err) {
+        setUploadError(err.message || 'Upload failed. Please try again.');
+      } finally {
+        setUploadLoading(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   return (
     <div className="dashboard-view fade-in">
       <header className="dashboard-header">
@@ -173,12 +142,12 @@ export default function Dashboard({ user }) {
         {!isReadOnly && (
           <section className="upload-section glass-panel">
             <div className="section-header">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00f2fe" strokeWidth="2">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1F5C4E" strokeWidth="2">
                 <path d="M21.2 15v3.8a2 2 0 0 1-2 2H4.8a2 2 0 0 1-2-2V15"></path>
                 <polyline points="17 8 12 3 7 8"></polyline>
                 <line x1="12" y1="3" x2="12" y2="15"></line>
               </svg>
-              <h3>Ingest Diagnostic Scan</h3>
+              <h3>Upload Medical Records</h3>
             </div>
 
             {uploadError && (
@@ -193,101 +162,95 @@ export default function Dashboard({ user }) {
               </div>
             )}
 
-            <form onSubmit={handleUploadSubmit} className="upload-form">
-              <div className="form-group">
-                <label className="form-label" htmlFor="upload-title">Scan / Study Title</label>
-                <input 
-                  id="upload-title"
-                  type="text" 
-                  className="form-input" 
-                  placeholder="e.g. Brain MRI T1 contrast"
-                  value={newScan.title}
-                  onChange={(e) => setNewScan(prev => ({ ...prev, title: e.target.value }))}
-                  required
-                />
+            {uploadLoading && (
+              <div className="alert-loading-banner">
+                <div className="spinner" /> Running Gemini AI Analysis &amp; Generating TXT Report...
               </div>
+            )}
 
-              <div className="form-row-2col">
-                <div className="form-group">
-                  <label className="form-label" htmlFor="upload-type">Imaging Modality</label>
-                  <select 
-                    id="upload-type"
-                    className="form-select"
-                    value={newScan.type}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setNewScan(prev => ({ ...prev, type: val }));
-                      // Also reset the preset if selected
-                      if (newScan.fileName && newScan.fileName.startsWith('demo_')) {
-                        setPresetImage(val);
-                      }
-                    }}
-                  >
-                    <option value="MRI">MRI (Magnetic Resonance)</option>
-                    <option value="CT">CT (Computed Tomography)</option>
-                    <option value="Image">X-Ray / Ultrasound</option>
-                    <option value="Other">Other Scan Modality</option>
-                  </select>
+            {/* TWO SIMPLE, DIRECT VISIBLE UPLOAD BOXES */}
+            <div className="dual-upload-boxes-container">
+              
+              {/* BOX 1: PRESCRIPTION UPLOADER */}
+              <div 
+                className="simple-upload-card prescription-card"
+                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    handleDirectUpload(e.dataTransfer.files[0], 'Prescription');
+                  }
+                }}
+              >
+                <div className="box-icon-header">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0284c7" strokeWidth="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                  </svg>
                 </div>
-
-                <div className="form-group">
-                  <label className="form-label" htmlFor="upload-patient">Patient Full Name</label>
-                  <input 
-                    id="upload-patient"
-                    type="text" 
-                    className="form-input" 
-                    placeholder="e.g. Jane Miller"
-                    value={newScan.patientName}
-                    onChange={(e) => setNewScan(prev => ({ ...prev, patientName: e.target.value }))}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label" htmlFor="upload-desc">Clinical Indications / Diagnosis</label>
-                <textarea 
-                  id="upload-desc"
-                  className="form-textarea" 
-                  rows="3" 
-                  placeholder="Enter scan symptoms, radiological insights, findings..."
-                  value={newScan.description}
-                  onChange={(e) => setNewScan(prev => ({ ...prev, description: e.target.value }))}
-                ></textarea>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Scan File Upload</label>
-                <div className="file-uploader-box">
-                  <input 
-                    id="scan-file-input"
-                    type="file" 
-                    className="hidden-file-input" 
-                    accept="image/*"
-                    onChange={handleFileChange}
-                  />
-                  <label htmlFor="scan-file-input" className="file-uploader-label">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                      <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                      <polyline points="21 15 16 10 5 21"></polyline>
-                    </svg>
-                    <span>{newScan.fileName ? `Selected: ${newScan.fileName}` : 'Choose DICOM/JPEG Image or drag-and-drop'}</span>
-                  </label>
-                </div>
+                <h4>1. PRESCRIPTION FILE UPLOAD</h4>
+                <p>Upload doctor prescription, medical advice, lab notes, or Rx document</p>
                 
-                <div className="upload-presets-row">
-                  <span className="preset-label">Or use clinical demo:</span>
-                  <button type="button" className="preset-btn" onClick={() => setPresetImage(newScan.type)}>
-                    Use Preset {newScan.type}
-                  </button>
-                </div>
+                <input 
+                  id="prescription-direct-input"
+                  type="file" 
+                  className="hidden-file-input" 
+                  accept="image/*,.pdf,.doc,.docx,.txt"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      handleDirectUpload(e.target.files[0], 'Prescription');
+                    }
+                  }}
+                  disabled={uploadLoading}
+                />
+                <label htmlFor="prescription-direct-input" className="box-action-btn prescription-btn">
+                  Browse Prescription
+                </label>
               </div>
 
-              <button type="submit" className="primary-btn upload-btn" disabled={uploadLoading}>
-                {uploadLoading ? <div className="spinner" /> : 'Index Scan Record'}
-              </button>
-            </form>
+              {/* BOX 2: RADIOLOGY SCAN UPLOADER */}
+              <div 
+                className="simple-upload-card scan-card"
+                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    handleDirectUpload(e.dataTransfer.files[0], 'Radiology Scan');
+                  }
+                }}
+              >
+                <div className="box-icon-header">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#1F5C4E" strokeWidth="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <polyline points="21 15 16 10 5 21"></polyline>
+                  </svg>
+                </div>
+                <h4>2. RADIOLOGY SCAN UPLOAD</h4>
+                <p>Upload MRI, CT, X-Ray, Ultrasound, or DICOM scan image file</p>
+                
+                <input 
+                  id="scan-direct-input"
+                  type="file" 
+                  className="hidden-file-input" 
+                  accept="image/*,.dcm,.dicom"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      handleDirectUpload(e.target.files[0], 'Radiology Scan');
+                    }
+                  }}
+                  disabled={uploadLoading}
+                />
+                <label htmlFor="scan-direct-input" className="box-action-btn scan-btn">
+                  Browse Scan File
+                </label>
+              </div>
+
+            </div>
           </section>
         )}
 

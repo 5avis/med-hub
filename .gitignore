@@ -1,3 +1,14 @@
+# Environment Variables & Secrets
+.env
+backend/.env
+*.env
+
+# SQLite Databases & Uploads
+*.db
+*.db-journal
+uploads/
+backend/uploads/
+
 # Logs
 logs
 *.log

@@ -28,7 +28,8 @@ export default function App() {
           id: decoded.sub,
           name: decoded.name || decoded.email,
           email: decoded.email,
-          role: decoded.role || 'readonly'
+          role: decoded.role || 'readonly',
+          medhubId: decoded.medhubId || decoded.medHubId || 'MED-100100'
         });
         setCurrentPage('dashboard');
       } else {
@@ -51,7 +52,8 @@ export default function App() {
         id: decoded.sub,
         name: decoded.name || decoded.email,
         email: decoded.email,
-        role: decoded.role || 'readonly'
+        role: decoded.role || 'readonly',
+        medhubId: decoded.medhubId || decoded.medHubId || 'MED-100100'
       });
       setCurrentPage('dashboard');
       setActiveTab('dashboard');
