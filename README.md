@@ -128,14 +128,26 @@ User Visits App
 
 ## Access Level Comparison Table
 
-| Feature         | Med.hub ID | Account & Password |
-|                 |            |                    |
-| Login             | ✅          | ✅ |
-| View Files        | ✅          | ✅ |
-| Search            | ✅          | ✅ |
-| Upload Image      | ❌          | ✅ |
-| Upload Scans      | ❌          | ✅ |
-| Analyze Files     | ❌          | ✅ |
-| Export/Download   | ❌          | ✅ |
-| Edit Profile      | ❌          | ✅ |
-| Create Account    | ❌          | ✅ |
+MEDHUB ID
+
+Login           ████████████████ 100% ✅
+View Files      ████████████████ 100% ✅
+Search          ████████████████ 100% ✅
+Upload Image    ░░░░░░░░░░░░░░░░   0% ❌
+Upload Scans    ░░░░░░░░░░░░░░░░   0% ❌
+Analyze Files   ░░░░░░░░░░░░░░░░   0% ❌
+Export/Download ░░░░░░░░░░░░░░░░   0% ❌
+Edit Profile    ░░░░░░░░░░░░░░░░   0% ❌
+Create Account  ░░░░░░░░░░░░░░░░   0% ❌
+
+NORMAL LOGIN
+
+Login           ████████████████ 100% ✅
+View Files      ████████████████ 100% ✅
+Search          ████████████████ 100% ✅
+Upload Image    ████████████████ 100% ✅
+Upload Scans    ████████████████ 100% ✅
+Analyze Files   ████████████████ 100% ✅
+Export/Download ████████████████ 100% ✅
+Edit Profile    ████████████████ 100% ✅
+Create Account  ████████████████ 100% ✅
