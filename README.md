@@ -1,7 +1,5 @@
 #MEDHUB
 
-# Medical Imaging & Records Management Application
-
 ## Project Overview
 
 A web-based medical imaging and health records management system that allows users to upload, analyze, and manage medical images and scans. The application supports dual authentication methods with role-based access control to ensure secure access to medical records.
